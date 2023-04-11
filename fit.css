@@ -1,0 +1,27 @@
+#fit-table {
+	width: 80%;
+	margin: auto;
+	border-collapse: collapse;
+}
+
+#fit-table td, #fit-table th {
+	padding: 0.5em;
+	border: 1px solid black;
+}
+
+#fit-table thead tr:first-of-type {
+	border-bottom-style: double;
+}
+
+#fit-table thead th {
+	background-color: #092040;
+	text-align: center;
+}
+
+#fit-table tbody tr :first-child {
+	text-align: left;
+}
+
+#fit-table tbody tr :not(first-child) {
+	text-align: right;
+}

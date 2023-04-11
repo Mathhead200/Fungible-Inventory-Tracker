@@ -1,5 +1,6 @@
 from flask import *
 from openpyxl import *
+import os
 
 XLSX_FILENAME = "fit.xlsx"
 
@@ -63,11 +64,12 @@ def _save_wb():
 	wb.save(filename = XLSX_FILENAME)
 
 
-app = Flask(__name__)
+root_dir = os.path.abspath(".")
+app = Flask(__name__, template_folder = root_dir, static_folder = root_dir, static_url_path = "/")
 
 @app.route("/")
 def flask_root():
-	return ""  # TODO: stub
+	return render_template("fit.html")
 
 @app.route("/asset", methods=["GET"])
 def get_assets():
@@ -105,7 +107,7 @@ def update_asset_info(id):
 		assets.cell(row = row_idx, column = 3).value = PUT.get("product_number")
 		assets.cell(row = row_idx, column = 4).value = PUT.get("manufacturer")
 		_log("update_asset_info", \
-			f"id={id}; asset_name={PUT['asset_name']}; product_number={PUT.get('product_number')}; manufacturer={PUT.get('manufacturer')}")
+			f"asset_id={id}; asset_name={PUT['asset_name']}; product_number={PUT.get('product_number')}; manufacturer={PUT.get('manufacturer')}")
 		_save_wb()
 	except KeyError:
 		abort(404)
@@ -150,7 +152,8 @@ def update_room_info(id):
 		rooms.cell(row = row_idx, column = 2).value = PUT["room_name"]  # may raise KeyError
 		rooms.cell(row = row_idx, column = 3).value = PUT.get("description")
 		rooms.cell(row = row_idx, column = 4).value = PUT.get("staff")
-		# TODO: log vvvvv
+		_log("update_room_info",
+			f"room_id={id}; room_name={PUT['room_name']}; description={PUT.get('description')}; staff={PUT.get('staff')}")
 		_save_wb()
 	except KeyError:
 		abort(404)
@@ -163,13 +166,14 @@ def delete_room():
 def move_asset():
 	POST = request.form
 	try:
-		asset = POST.get("asset")
-		src = POST.get("src")
-		dest = POST.get("dest")
-		qu = POST.get("qu")
+		asset_id = POST["asset_id"]
+		src_room_id = POST["src_room_id"]
+		dest_room_id = POST["dest_room_id"]
+		quantity = POST["quantity"]
 
-		_move_asset(asset, src, dest, qu)
-		_log("move", f"asset={asset}; src={src}; dest={dest}; qu={qu}")
+		_move_asset(asset_id, src_room_id, dest_room_id, quantity)
+		_log("move_asset",
+			f"asset_id={asset_id}; src_room_id={src_room_id}; dest_room_id={dest_room_id}; quantity={quantity}")
 		_save_wb()
 	
 	except KeyError:
@@ -203,7 +207,7 @@ def inventory_table():
 	rm_hash = sheet_hash(rm_list, "Room ID")
 
 	table = [["Room"] + [a["Asset Name"] for a in as_list]]
-	table.extend([[[r["Room Name"]] + [0] * len(as_list)] for r in rm_list])
+	table.extend([[r["Room Name"]] + [0] * len(as_list) for r in rm_list])
 	
 	header = [cell.value for cell in next(inventory.rows)]
 	ROOM_ID = header.index("Room ID")
@@ -216,3 +220,4 @@ def inventory_table():
 		table[rm_idx][as_idx] += int(row[QUANTITY])
 	
 	return table
+
